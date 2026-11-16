@@ -1,59 +1,41 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MeatHub
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+MeatHub is a web-based e-commerce marketplace that connects local meat producers and suppliers with customers who want to buy meat products online. The platform aims to help producers reach more customers while making it easier to browse and order local meat.
 
-## About Laravel
+## Current features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Browse, search, and filter meat products.
+- Manage product listings, prices, inventory, and producer profiles from the admin panel.
+- View active producer profiles on the storefront.
+- Add products to a cart and place an order using the configured GCash QR code.
+- Submit a GCash transaction reference and receipt screenshot for manual payment verification.
+- Reserve stock while an order is pending; admins can mark verified orders as paid or cancel pending orders to release stock.
+- Customer accounts have a navbar notification bell with an unread count and dropdown; the My Orders page focuses on order history and status badges.
+- Review revenue, order counts, and low-stock products on the admin dashboard.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The current checkout requires a delivery address. It does not collect a customer name or phone number, and it does not yet support pickup-date selection.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Business model
 
-## Learning Laravel
+MeatHub's planned revenue model is commission from successful transactions, with featured product listings as an additional revenue stream. This can support the cost of operating and maintaining the marketplace while helping producers earn from their sales. Commission calculation and paid featured listings are not yet implemented.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## GCash setup
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The merchant QR image is stored at `public/images/gcash-qr.png`. Set the following in `.env`:
 
-## Laravel Sponsors
+```env
+GCASH_QR_IMAGE=images/gcash-qr.png
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Apply database changes with `php artisan migrate`. Customers place an order before paying, then submit their transaction reference from the signed order link. In `/admin/orders`, verify the transfer before marking an order as paid.
 
-### Premium Partners
+Customers can create an account from the storefront and sign in to associate future orders with their account. Guests can browse and add products to their cart, but must sign in to complete checkout. Customer order-status notifications are stored in the `notifications` table and shown in the navbar bell dropdown; the Filament admin panel checks its database notification bell every 30 seconds.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Run `php artisan storage:link` to serve producer avatars and uploaded receipts from the public storage disk.
 
-## Contributing
+## Built with
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Laravel 12
+- PHP 8.2+
+- Filament 3
+- Vite

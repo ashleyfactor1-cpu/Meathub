@@ -27,9 +27,17 @@
                 <a href="#why-meathub" class="transition hover:text-[#14532d]">Our producers</a>
             </div>
 
-            <a href="#market" class="inline-flex items-center gap-2 rounded-full bg-[#14532d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#166534] sm:px-5">
-                Explore products <span aria-hidden="true">↗</span>
-            </a>
+            <div class="flex shrink-0 items-center gap-2">
+                @auth
+                    @include('components.customer-notification-bell')
+                    <a href="{{ route('account.orders') }}" class="rounded-full border border-[#d9e3d8] bg-white px-4 py-2.5 text-sm font-semibold text-[#14532d] transition hover:bg-[#f4f8f3]">My account</a>
+                @else
+                    <a href="{{ route('account.login') }}" class="rounded-full border border-[#d9e3d8] bg-white px-4 py-2.5 text-sm font-semibold text-[#14532d] transition hover:bg-[#f4f8f3]">Sign in</a>
+                @endauth
+                <a href="#market" class="inline-flex items-center gap-2 rounded-full bg-[#14532d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#166534] sm:px-5">
+                    Explore products <span aria-hidden="true">↗</span>
+                </a>
+            </div>
         </nav>
     </header>
 
@@ -58,7 +66,7 @@
                     @endforeach
                 </div>
 
-                <div id="why-meathub" class="mt-8 flex flex-wrap gap-x-7 gap-y-3 border-t border-[#e8dfd5] pt-6 text-sm text-[#655c56]">
+                <div class="mt-8 flex flex-wrap gap-x-7 gap-y-3 border-t border-[#e8dfd5] pt-6 text-sm text-[#655c56]">
                     <span class="flex items-center gap-2"><span class="text-[#15803d]">✓</span> Local producers</span>
                     <span class="flex items-center gap-2"><span class="text-[#15803d]">✓</span> Clear per-kg pricing</span>
                     <span class="flex items-center gap-2"><span class="text-[#15803d]">✓</span> Easy to shop</span>
@@ -67,8 +75,8 @@
 
             <div class="relative mx-auto w-full max-w-xl">
                 <div class="absolute -left-4 top-8 h-24 w-24 rounded-full bg-[#e6c8a9] opacity-60 blur-2xl sm:-left-7"></div>
-                <div class="relative overflow-hidden rounded-[2rem] bg-[#14532d] p-5 shadow-[0_24px_70px_-30px_rgba(20,83,45,.5)] sm:p-7">
-                    <div class="absolute -right-14 -top-20 h-64 w-64 rounded-full border-[34px] border-white/5"></div>
+                <div class="relative overflow-hidden rounded-4xl bg-[#14532d] p-5 shadow-[0_24px_70px_-30px_rgba(20,83,45,.5)] sm:p-7">
+                    <div class="absolute -right-14 -top-20 h-64 w-64 rounded-full border-34 border-white/5"></div>
                     <div class="relative flex items-center justify-between text-xs font-semibold uppercase tracking-[.16em] text-white/70">
                         <span>Good food, closer to home</span>
                         <span class="rounded-full bg-white/10 px-3 py-1.5 normal-case tracking-normal text-white">Local selection</span>
@@ -79,7 +87,7 @@
                             alt="Freshly prepared cuts of meat"
                             class="h-64 w-full object-cover sm:h-80"
                             fetchpriority="high">
-                        <div class="absolute inset-0 bg-gradient-to-t from-[#101d17]/65 via-transparent to-transparent"></div>
+                        <div class="absolute inset-0 bg-linear-to-t from-[#101d17]/65 via-transparent to-transparent"></div>
                         <div class="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 text-white">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-[.14em] text-white/75">A better market run</p>
@@ -174,10 +182,10 @@
                                         <p class="mt-1.5 min-h-10 text-sm leading-5 text-[#82766e]">A market favorite, ready for your next meal.</p>
                                     @endif
                                     <div class="mt-4 flex items-center gap-2.5 border-t border-[#f0e9e0] pt-4">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3ebe4] text-sm font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($product->producer_name ?: 'P', 0, 1)) }}</span>
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3ebe4] text-sm font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($product->producer?->name ?: 'P', 0, 1)) }}</span>
                                         <div class="min-w-0">
-                                            <p class="text-[11px] uppercase tracking-[.1em] text-[#978b80]">Produced by</p>
-                                            <p class="truncate text-sm font-medium text-[#514740]">{{ $product->producer_name ?: 'Producer details coming soon' }}</p>
+                                            <p class="text-[11px] uppercase tracking-widest text-[#978b80]">Produced by</p>
+                                            <p class="truncate text-sm font-medium text-[#514740]">{{ $product->producer?->name ?: 'Producer details coming soon' }}</p>
                                         </div>
                                     </div>
                                     <div class="mt-4 flex items-end justify-between gap-3">
@@ -194,7 +202,7 @@
                                         data-product-name="{{ $product->name }}"
                                         data-product-price="{{ $product->price }}"
                                         data-product-stock="{{ $product->stock_kg }}"
-                                        data-producer-name="{{ $product->producer_name ?: 'Producer details coming soon' }}"
+                                        data-producer-name="{{ $product->producer?->name ?: 'Producer details coming soon' }}"
                                         @disabled(! $product->is_available || $product->stock_kg < 1)
                                         class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#14532d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#166534] disabled:cursor-not-allowed disabled:bg-[#e1ddd8] disabled:text-[#827c75]"
                                     >
@@ -218,6 +226,38 @@
                 @endif
             </div>
         </section>
+
+        <section id="why-meathub" class="scroll-mt-24 border-t border-[#ece3d9] bg-[#f8f5ef] py-12 sm:py-16">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <p class="text-xs font-semibold uppercase tracking-[.16em] text-[#4f7657]">Meet the people behind the market</p>
+                <h2 class="mt-2 text-3xl font-semibold tracking-tight text-[#1f2937] sm:text-4xl">Our producers</h2>
+                <p class="mt-2 text-sm text-[#82766e]">Local producers bringing good food to your table.</p>
+                @if ($producers->isNotEmpty())
+                    <div class="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($producers as $producer)
+                            <article class="flex gap-4 rounded-2xl border border-[#ece3d9] bg-white p-5">
+                                @if ($producer->avatar)
+                                    <img src="{{ asset('storage/'.$producer->avatar) }}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover">
+                                @else
+                                    <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#edf1e8] text-xl font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($producer->name, 0, 1)) }}</span>
+                                @endif
+                                <div class="min-w-0">
+                                    <h3 class="font-semibold text-[#1f2937]">{{ $producer->name }}</h3>
+                                    @if ($producer->location)
+                                        <p class="mt-1 text-sm text-[#4f7657]">{{ $producer->location }}</p>
+                                    @endif
+                                    @if ($producer->bio)
+                                        <p class="mt-2 text-sm leading-6 text-[#82766e]">{{ \Illuminate\Support\Str::limit($producer->bio, 140) }}</p>
+                                    @endif
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="mt-6 rounded-xl border border-dashed border-[#e1d5ca] bg-white px-5 py-8 text-center text-sm text-[#82766e]">Producer profiles will appear here soon.</p>
+                @endif
+            </div>
+        </section>
     </main>
 
     <dialog id="cart-dialog" class="m-auto w-[calc(100%-2rem)] max-w-lg rounded-3xl border border-[#ece3d9] bg-[#fffdfa] p-0 text-[#292522] shadow-2xl backdrop:bg-[#24191a]/50">
@@ -237,8 +277,42 @@
                 <strong id="cart-total" class="text-lg text-[#14532d]">₱0.00</strong>
             </div>
             <p class="mt-1 text-xs text-[#82766e]">Each item adds 1 kg. Final amount depends on weighed quantity.</p>
-            <button type="button" data-close-cart class="mt-4 w-full rounded-xl bg-[#14532d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#166534]">Continue shopping</button>
+            <button type="button" data-checkout data-checkout-url="{{ route('checkout') }}" data-authenticated="{{ auth()->check() ? 'true' : 'false' }}" disabled class="mt-4 w-full rounded-xl bg-[#14532d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#166534] disabled:cursor-not-allowed disabled:bg-[#a8b7aa]">Checkout with GCash</button>
+            <button type="button" data-close-cart class="mt-2 w-full rounded-xl border border-[#e8dfd5] bg-white px-4 py-3 text-sm font-semibold text-[#514740] transition hover:bg-[#f5f2ed]">Continue shopping</button>
         </div>
+    </dialog>
+
+    <dialog id="checkout-dialog" class="m-auto w-[calc(100%-2rem)] max-w-xl rounded-3xl border border-[#ece3d9] bg-[#fffdfa] p-0 text-[#292522] shadow-2xl backdrop:bg-[#24191a]/50">
+        <div class="flex items-center justify-between border-b border-[#ece3d9] px-5 py-4 sm:px-6">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[.14em] text-[#4f7657]">GCash checkout</p>
+                <h2 class="mt-1 text-xl font-semibold text-[#1f2937]">Delivery address</h2>
+            </div>
+            <button type="button" data-close-checkout aria-label="Close checkout" class="flex h-10 w-10 items-center justify-center rounded-full text-xl text-[#655c56] transition hover:bg-[#f2e8e1] hover:text-[#14532d]">×</button>
+        </div>
+        <form id="checkout-form" action="{{ route('orders.store') }}" method="POST" class="max-h-[75vh] space-y-4 overflow-y-auto px-5 py-5 sm:px-6" data-qr-configured="{{ $gcashQrImage ? 'true' : 'false' }}">
+            @csrf
+            <div id="checkout-items"></div>
+            <div id="checkout-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert"></div>
+            <p class="text-sm text-[#655c56]">Your order total is <strong id="checkout-total" class="text-[#14532d]">₱0.00</strong>. Stock is reserved while your payment is pending.</p>
+            <label class="block text-sm font-medium text-[#514740]" for="delivery-address">Delivery address
+                <textarea id="delivery-address" name="delivery_address" required maxlength="2000" rows="3" autocomplete="street-address" class="mt-1.5 w-full rounded-xl border border-[#e8dfd5] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/10">{{ old('delivery_address') }}</textarea>
+            </label>
+            @if ($gcashQrImage)
+                <div class="flex items-center gap-4 rounded-2xl border border-[#dce8dd] bg-[#f4f8f3] p-4">
+                    <img src="{{ asset($gcashQrImage) }}" alt="" class="h-20 w-20 rounded-lg bg-white object-contain p-1">
+                    <div>
+                        <p class="font-semibold text-[#14532d]">Pay using GCash QR</p>
+                        <p class="mt-1 text-xs leading-5 text-[#655c56]">After placing your order, scan the QR and submit your transaction reference.</p>
+                    </div>
+                </div>
+                <button id="submit-order" type="submit" class="w-full rounded-xl bg-[#14532d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#166534]">Place order</button>
+            @else
+                <p class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">GCash checkout is not available yet. The merchant must add their QR image first.</p>
+                <button type="submit" disabled class="w-full cursor-not-allowed rounded-xl bg-[#a8b7aa] px-4 py-3 text-sm font-semibold text-white">GCash QR not configured</button>
+            @endif
+            <button type="button" data-back-to-cart class="w-full rounded-xl border border-[#e8dfd5] bg-white px-4 py-3 text-sm font-semibold text-[#514740] transition hover:bg-[#f5f2ed]">Back to cart</button>
+        </form>
     </dialog>
 
     <button id="cart-toggle" type="button" aria-haspopup="dialog" aria-controls="cart-dialog" class="fixed bottom-5 right-4 z-30 inline-flex min-h-14 items-center gap-3 rounded-full bg-[#14532d] px-5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(20,83,45,.75)] transition hover:-translate-y-0.5 hover:bg-[#166534] focus:outline-none focus:ring-4 focus:ring-[#a16b46]/40 sm:bottom-7 sm:right-7">
@@ -248,10 +322,33 @@
     </button>
 
     <footer class="bg-[#1f2937] text-white">
-        <div class="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}" class="text-lg font-bold tracking-tight">meathub<span class="text-[#e7aa8c]">.</span></a>
-            <p class="text-sm text-white/65">Good meals start with good meat.</p>
-            <p class="text-xs text-white/50">&copy; {{ date('Y') }} MeatHub</p>
+        <div class="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
+            <div class="grid gap-8 sm:grid-cols-2">
+                <div>
+                    <a href="{{ route('home') }}" class="text-lg font-bold tracking-tight">meathub<span class="text-[#e7aa8c]">.</span></a>
+                    <p class="mt-2 text-sm text-white/65">Good meals start with good meat.</p>
+                </div>
+                <section aria-labelledby="contact-us-heading">
+                    <h2 id="contact-us-heading" class="text-sm font-semibold uppercase tracking-[.14em] text-white">Contact Us</h2>
+                    <dl class="mt-3 grid gap-3 text-sm text-white/70 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-white/45">Email</dt>
+                            <dd class="mt-1"><a href="mailto:meathub@gmail.com" class="transition hover:text-white">meathub@gmail.com</a></dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-white/45">Phone</dt>
+                            <dd class="mt-1"><a href="tel:+639000000000" class="transition hover:text-white">+63 900 000 0000</a></dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-white/45">Location</dt>
+                            <dd class="mt-1">Alcate Victoria</dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+            <div class="mt-8 border-t border-white/10 pt-4">
+                <p class="text-xs text-white/50">&copy; {{ date('Y') }} MeatHub. All rights reserved.</p>
+            </div>
         </div>
     </footer>
 </body>

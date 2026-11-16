@@ -38,10 +38,12 @@ class ProductResource extends Resource
                             ->maxSize(5120)
                             ->columnSpanFull(),
 
-                        Forms\Components\TextInput::make('producer_name')
+                        Forms\Components\Select::make('producer_id')
                             ->label('Producer')
-                            ->maxLength(255)
-                            ->placeholder('e.g. San Isidro Family Farm'),
+                            ->relationship(name: 'producer', titleAttribute: 'name')
+                            ->searchable()
+                            ->preload()
+                            ->native(false),
 
                         Forms\Components\Select::make('category')
                             ->options([
@@ -95,6 +97,12 @@ class ProductResource extends Resource
                         default => 'gray',
                     })
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('producer.name')
+                    ->label('Producer')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('No producer assigned'),
 
                 Tables\Columns\TextColumn::make('price')
                     ->money('PHP')
