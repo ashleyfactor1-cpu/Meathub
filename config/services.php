@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'gcash' => [
+        'qr_image' => env('GCASH_QR_IMAGE'),
+    ],
+
 ];
