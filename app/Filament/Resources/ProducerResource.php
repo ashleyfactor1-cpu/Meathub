@@ -31,6 +31,20 @@ class ProducerResource extends Resource
                         Forms\Components\TextInput::make('location')
                             ->maxLength(255)
                             ->placeholder('City or province'),
+                        Forms\Components\TextInput::make('address')
+                            ->label('Shop / Pick-up Address')
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('map_embed_url')
+                            ->label('Map embed URL')
+                            ->helperText('Paste Google Maps embed link or leave blank to auto-generate from address.')
+                            ->maxLength(2048)
+                            ->rules([
+                                'nullable',
+                                'url',
+                                'regex:#^https://(?:(?:www\.)?google\.com|maps\.google\.com)/maps(?:/|\?|$)#i',
+                            ])
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('contact_number')
                             ->label('Contact number')
                             ->tel()
@@ -64,6 +78,10 @@ class ProducerResource extends Resource
                     ->sortable()
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('location')
+                    ->searchable()
+                    ->placeholder('Not provided'),
+                Tables\Columns\TextColumn::make('address')
+                    ->label('Shop / Pick-up Address')
                     ->searchable()
                     ->placeholder('Not provided'),
                 Tables\Columns\TextColumn::make('contact_number')

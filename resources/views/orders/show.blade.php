@@ -49,6 +49,20 @@
                 </div>
             </div>
 
+            @if ($producers->isNotEmpty())
+                <section class="mt-7" aria-labelledby="producer-locations-heading">
+                    <h2 id="producer-locations-heading" class="text-lg font-semibold text-[#1f2937]">Producer shop / pick-up locations</h2>
+                    <div class="mt-3 grid gap-5">
+                        @foreach ($producers as $producer)
+                            <article class="rounded-2xl border border-[#ece3d9] bg-white p-4">
+                                <h3 class="font-semibold text-[#1f2937]">{{ $producer->name }}</h3>
+                                @include('components.producer-map', ['producer' => $producer])
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             @if ($order->payment_status === 'pending')
                 @if ($gcashQrImage)
                     <div class="mt-7 rounded-2xl border border-[#dce8dd] bg-[#f4f8f3] p-5 text-center">
@@ -83,7 +97,7 @@
                     <p class="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">The merchant GCash QR code is not configured. Please contact MeatHub before sending payment.</p>
                 @endif
             @elseif (in_array($order->payment_status, ['paid', 'completed'], true))
-                <p class="mt-6 rounded-xl border border-[#dce8dd] bg-[#f4f8f3] p-4 text-sm text-[#14532d]">Your payment has been verified. We will contact you about delivery.</p>
+                <p class="mt-6 rounded-xl border border-[#dce8dd] bg-[#f4f8f3] p-4 text-sm text-[#14532d]">Your payment has been verified. We will contact you about pickup.</p>
             @else
                 <p class="mt-6 rounded-xl border border-[#ece3d9] bg-[#f5f2ed] p-4 text-sm text-[#655c56]">This order was cancelled.</p>
             @endif

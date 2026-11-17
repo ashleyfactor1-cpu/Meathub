@@ -20,7 +20,6 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
-            'delivery_address' => ['required', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity_kg' => ['required', 'integer', 'min:1', 'max:1000'],
@@ -71,7 +70,6 @@ class OrderController extends Controller
             }
 
             $order = Order::create([
-                'delivery_address' => $validated['delivery_address'],
                 'user_id' => $userId,
                 'total' => number_format($totalCents / 100, 2, '.', ''),
                 'stock_deducted' => true,
@@ -106,7 +104,7 @@ class OrderController extends Controller
     public function show(string $orderNumber): View
     {
         $order = Order::query()
-            ->with('items')
+            ->with('items.product.producer')
             ->where('order_number', $orderNumber)
             ->firstOrFail();
 
@@ -117,7 +115,7 @@ class OrderController extends Controller
     {
         $order = $request->user()
             ->orders()
-            ->with('items')
+            ->with('items.product.producer')
             ->where('order_number', $orderNumber)
             ->firstOrFail();
 
@@ -126,8 +124,15 @@ class OrderController extends Controller
 
     private function renderOrder(Order $order): View
     {
+        $producers = $order->items
+            ->map(fn ($item) => $item->product?->producer)
+            ->filter(fn ($producer) => $producer && $producer->mapEmbedSource())
+            ->unique('id')
+            ->values();
+
         return view('orders.show', [
             'order' => $order,
+            'producers' => $producers,
             'gcashQrImage' => config('services.gcash.qr_image'),
             'paymentReferenceUrl' => URL::temporarySignedRoute(
                 'orders.payment-reference',

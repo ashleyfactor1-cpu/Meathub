@@ -29,8 +29,8 @@ class OrderResource extends Resource
                     ->searchable()
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('delivery_address')
-                    ->limit(32)
-                    ->tooltip(fn (Order $record): string => $record->delivery_address),
+                    ->label('Fulfillment')
+                    ->formatStateUsing(fn (?string $state): string => filled($state) ? 'Delivery' : 'Pickup reservation'),
                 Tables\Columns\TextColumn::make('items.product_name')
                     ->label('Items')
                     ->listWithLineBreaks(),
@@ -81,6 +81,8 @@ class OrderResource extends Resource
                                         default => 'warning',
                                     }),
                                 TextEntry::make('delivery_address')
+                                    ->label('Fulfillment')
+                                    ->placeholder('Pickup reservation')
                                     ->columnSpanFull(),
                                 TextEntry::make('items.product_name')
                                     ->label('Items')

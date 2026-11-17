@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\CustomerChats;
 use App\Filament\Resources\OrderResource\Pages\ListOrders;
+use App\Filament\Resources\ProducerResource\Pages\CreateProducer as CreateProducerPage;
+use App\Filament\Resources\ProducerResource\Pages\ListProducers as ListProducersPage;
 use App\Filament\Widgets\MeatHubStatsOverview;
+use App\Livewire\CustomerChat;
+use App\Models\ChatMessage;
 use App\Models\Order;
 use App\Models\Producer;
 use App\Models\Product;
@@ -48,7 +53,66 @@ class ExampleTest extends TestCase
             ->assertSee('meathub@gmail.com')
             ->assertSee('+63 900 000 0000')
             ->assertDontSee('(demo)')
-            ->assertSee('Alcate Victoria');
+            ->assertSee('Victoria, Oriental Mindoro');
+    }
+
+    public function test_storefront_cart_toggle_and_count_are_in_the_header_only(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+        $cartTogglePosition = strpos($html, 'id="cart-toggle"');
+        $cartDialogPosition = strpos($html, 'id="cart-dialog"');
+        $exploreProductsPosition = strpos($html, 'Explore products');
+
+        $this->assertNotFalse($cartTogglePosition);
+        $this->assertNotFalse($cartDialogPosition);
+        $this->assertNotFalse($exploreProductsPosition);
+        $this->assertGreaterThan($exploreProductsPosition, $cartTogglePosition);
+        $this->assertLessThan($cartDialogPosition, $cartTogglePosition);
+        $this->assertSame(1, substr_count($html, 'id="cart-toggle"'));
+        $this->assertSame(1, substr_count($html, 'id="cart-count"'));
+        $this->assertStringNotContainsString('fixed bottom-5 right-4', $html);
+        $cartButton = substr($html, $cartTogglePosition, strpos($html, '</button>', $cartTogglePosition) - $cartTogglePosition);
+        $this->assertStringContainsString('🛒', $cartButton);
+        $this->assertStringNotContainsString('>Cart<', $cartButton);
+        $this->assertStringNotContainsString('absolute', $cartButton);
+    }
+
+    public function test_customer_chat_link_is_floating_and_labeled_chat(): void
+    {
+        $customer = User::factory()->create();
+        $customer->is_admin = false;
+        $customer->save();
+        $this->actingAs($customer);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('href="'.route('account.chat').'"', false)
+            ->assertSee('fixed bottom-5 right-4', false)
+            ->assertSee('Chat')
+            ->assertDontSee('Chat support');
+    }
+
+    public function test_header_places_explore_first_and_notifications_next_to_cart(): void
+    {
+        $customer = User::factory()->create();
+        $customer->is_admin = false;
+        $customer->save();
+        $this->actingAs($customer);
+
+        $html = $this->get('/')->assertOk()->getContent();
+        $explorePosition = strpos($html, 'Explore products');
+        $accountPosition = strpos($html, 'My account');
+        $cartPosition = strpos($html, 'id="cart-toggle"');
+        $notificationPosition = strpos($html, 'aria-label="Notifications');
+
+        $this->assertNotFalse($explorePosition);
+        $this->assertNotFalse($accountPosition);
+        $this->assertNotFalse($cartPosition);
+        $this->assertNotFalse($notificationPosition);
+        $this->assertLessThan($accountPosition, $explorePosition);
+        $this->assertLessThan($notificationPosition, $cartPosition);
+        $exploreLink = substr($html, $explorePosition, strpos($html, '</a>', $explorePosition) - $explorePosition);
+        $this->assertStringNotContainsString('↗', $exploreLink);
     }
 
     public function test_marketplace_shows_product_details_and_category_filters(): void
@@ -56,6 +120,7 @@ class ExampleTest extends TestCase
         $producer = Producer::create([
             'name' => 'San Isidro Farm',
             'location' => 'Bulacan',
+            'address' => '123 Farm Road, Bulacan',
             'is_active' => true,
         ]);
 
@@ -78,7 +143,115 @@ class ExampleTest extends TestCase
             ->assertSee('Our producers')
             ->assertSee('Bulacan')
             ->assertSee('Add to Cart')
-            ->assertSee('Organ Meat');
+            ->assertSee('Organ Meat')
+            ->assertSee('123 Farm Road, Bulacan')
+            ->assertSee('https://maps.google.com/maps?q=123+Farm+Road%2C+Bulacan&amp;output=embed', false)
+            ->assertSee('h-64 w-full', false)
+            ->assertSee('href="#producer-'.$producer->id.'"', false);
+    }
+
+    public function test_search_shows_matching_products_and_jumps_to_results(): void
+    {
+        $producer = Producer::create(['name' => 'San Isidro Farm', 'is_active' => true]);
+        Product::create([
+            'name' => 'Pork Chop',
+            'producer_id' => $producer->id,
+            'category' => 'Pork',
+            'price' => 250,
+            'stock_kg' => 5,
+            'is_available' => true,
+        ]);
+        Product::create([
+            'name' => 'Beef Ribs',
+            'producer_id' => $producer->id,
+            'category' => 'Beef',
+            'price' => 450,
+            'stock_kg' => 3,
+            'is_available' => true,
+        ]);
+        Product::create([
+            'name' => 'Leg quarter',
+            'producer_id' => $producer->id,
+            'category' => 'Chicken',
+            'price' => 220,
+            'stock_kg' => 4,
+            'is_available' => true,
+        ]);
+
+        $response = $this->get(route('home', ['q' => 'chop']));
+
+        $response->assertOk()
+            ->assertSee('Pork Chop')
+            ->assertDontSee('Leg quarter')
+            ->assertDontSee('Beef Ribs')
+            ->assertSee('Showing 1 result for “chop”')
+            ->assertSee('action="'.route('home').'#market"', false);
+
+        $this->get(route('home', ['q' => 'chicken']))
+            ->assertOk()
+            ->assertSee('Leg quarter')
+            ->assertDontSee('Pork Chop')
+            ->assertDontSee('Beef Ribs')
+            ->assertSee('Showing 1 result for “chicken”');
+    }
+
+    public function test_checkout_is_for_pickup_reservations_without_a_delivery_address(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Pickup reservation')
+            ->assertDontSee('name="delivery_address"', false)
+            ->assertDontSee('Delivery address');
+    }
+
+    public function test_custom_google_maps_embed_url_is_used_on_the_producer_profile(): void
+    {
+        Producer::create([
+            'name' => 'Mapped Farm',
+            'address' => '456 Market Road, Manila',
+            'map_embed_url' => 'https://www.google.com/maps/embed?pb=map-token',
+            'is_active' => true,
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('https://www.google.com/maps/embed?pb=map-token', false);
+    }
+
+    public function test_producer_admin_form_and_table_include_map_fields(): void
+    {
+        config(['app.env' => 'local']);
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test(CreateProducerPage::class)
+            ->assertFormFieldExists('address')
+            ->assertFormFieldExists('map_embed_url');
+
+        Livewire::test(CreateProducerPage::class)
+            ->fillForm([
+                'name' => 'Invalid Map Farm',
+                'map_embed_url' => 'https://example.com/maps/embed',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['map_embed_url']);
+
+        Livewire::test(CreateProducerPage::class)
+            ->fillForm([
+                'name' => 'Address Only Farm',
+                'address' => '123 Farm Road, Bulacan',
+                'map_embed_url' => null,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('producers', [
+            'name' => 'Address Only Farm',
+            'address' => '123 Farm Road, Bulacan',
+            'map_embed_url' => null,
+        ]);
+
+        Livewire::test(ListProducersPage::class)
+            ->assertCanRenderTableColumn('address');
     }
 
     public function test_storefront_only_shows_active_producers(): void
@@ -131,6 +304,25 @@ class ExampleTest extends TestCase
             ->assertSee('Low Stock Products');
         $this->get('/admin/orders')->assertOk();
         $this->get('/admin/producers')->assertOk();
+    }
+
+    public function test_admin_order_details_show_pickup_fulfillment_without_delivery_address(): void
+    {
+        config(['app.env' => 'local']);
+        $this->actingAs(User::factory()->create());
+
+        $order = Order::create([
+            'order_number' => 'MH-00000001',
+            'delivery_address' => null,
+            'total' => 250,
+            'payment_status' => 'pending',
+        ]);
+
+        Livewire::test(ListOrders::class)
+            ->mountTableAction('view', $order)
+            ->assertSee('Fulfillment')
+            ->assertSee('Pickup reservation')
+            ->assertDontSee('Delivery address');
     }
 
     public function test_marking_an_order_paid_deducts_stock_only_when_not_already_reserved(): void
@@ -239,7 +431,6 @@ class ExampleTest extends TestCase
         ]);
 
         $response = $this->postJson(route('orders.store'), [
-            'delivery_address' => '123 Market Street, Manila',
             'items' => [
                 ['product_id' => $product->id, 'quantity_kg' => 2],
             ],
@@ -256,6 +447,7 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'order_number' => 'MH-00000001',
             'user_id' => $customer->id,
+            'delivery_address' => null,
             'total' => '640.00',
             'payment_method' => 'gcash',
             'payment_status' => 'pending',
@@ -314,7 +506,6 @@ class ExampleTest extends TestCase
         ]);
 
         $this->postJson(route('orders.store'), [
-            'delivery_address' => '123 Market Street, Manila',
             'items' => [
                 ['product_id' => $product->id, 'quantity_kg' => 2],
             ],
@@ -349,15 +540,20 @@ class ExampleTest extends TestCase
         $this->assertAuthenticatedAs($customer);
         $this->assertFalse($customer->is_admin);
 
+        $producer = Producer::create([
+            'name' => 'San Isidro Farm',
+            'address' => '123 Farm Road, Bulacan',
+            'is_active' => true,
+        ]);
         $product = Product::create([
             'name' => 'Pork Belly',
+            'producer_id' => $producer->id,
             'price' => 320,
             'stock_kg' => 4,
             'is_available' => true,
         ]);
 
         $this->postJson(route('orders.store'), [
-            'delivery_address' => '123 Market Street, Manila',
             'items' => [
                 ['product_id' => $product->id, 'quantity_kg' => 1],
             ],
@@ -365,6 +561,7 @@ class ExampleTest extends TestCase
 
         $order = Order::query()->firstOrFail();
         $this->assertSame($customer->id, $order->user_id);
+        $this->assertNull($order->delivery_address);
         $this->assertDatabaseCount('notifications', 0);
 
         $order->update(['payment_status' => 'paid']);
@@ -384,7 +581,8 @@ class ExampleTest extends TestCase
             ->assertSee('Sign out')
             ->assertSee('action="'.route('account.logout').'" method="POST"', false)
             ->assertSee('name="_token"', false)
-            ->assertSee('My orders')
+            ->assertDontSee('Chat support')
+            ->assertDontSee('href="'.route('account.orders').'"', false)
             ->assertSee('Paid');
 
         $this->get('/')
@@ -395,7 +593,10 @@ class ExampleTest extends TestCase
 
         $this->get(route('account.orders.show', $order->order_number))
             ->assertOk()
-            ->assertSee('Your order MH-00000001 is now Paid.');
+            ->assertSee('Your order MH-00000001 is now Paid.')
+            ->assertSee('Producer shop / pick-up locations')
+            ->assertSee('123 Farm Road, Bulacan')
+            ->assertSee('https://maps.google.com/maps?q=123+Farm+Road%2C+Bulacan&amp;output=embed', false);
 
         $this->from(route('home'))
             ->post(route('account.notifications.read-all'))
@@ -422,6 +623,80 @@ class ExampleTest extends TestCase
             fn ($storedNotification): bool => $storedNotification->data['previous_status'] === 'paid'
                 && $storedNotification->data['order_status'] === 'completed',
         ));
+    }
+
+    public function test_customer_can_chat_with_support_without_access_to_other_customer_messages(): void
+    {
+        $customer = User::factory()->create();
+        $customer->is_admin = false;
+        $customer->save();
+
+        $otherCustomer = User::factory()->create();
+        $otherCustomer->is_admin = false;
+        $otherCustomer->save();
+
+        ChatMessage::create([
+            'customer_id' => $otherCustomer->id,
+            'sender_id' => $otherCustomer->id,
+            'body' => 'Private message from another customer.',
+        ]);
+
+        $this->actingAs($customer);
+
+        $this->get(route('account.chat'))
+            ->assertOk()
+            ->assertSee('Chat with us')
+            ->assertSee('Back to MeatHub')
+            ->assertDontSee('My orders')
+            ->assertDontSee('Sign out');
+        $this->get(route('filament.admin.pages.customer-chats'))->assertForbidden();
+
+        Livewire::test(CustomerChat::class)
+            ->set('body', 'I need help with my order.')
+            ->call('sendMessage')
+            ->assertHasNoErrors()
+            ->assertSee('I need help with my order.')
+            ->assertDontSee('Private message from another customer.');
+
+        $this->assertDatabaseHas('chat_messages', [
+            'customer_id' => $customer->id,
+            'sender_id' => $customer->id,
+            'body' => 'I need help with my order.',
+        ]);
+    }
+
+    public function test_admin_can_view_customer_chats_and_reply(): void
+    {
+        $customer = User::factory()->create();
+        $customer->is_admin = false;
+        $customer->save();
+
+        ChatMessage::create([
+            'customer_id' => $customer->id,
+            'sender_id' => $customer->id,
+            'body' => 'Can you help me?',
+        ]);
+
+        $this->actingAs(User::factory()->create());
+
+        $this->get(route('account.chat'))->assertForbidden();
+        $this->get(route('filament.admin.pages.customer-chats'))
+            ->assertOk()
+            ->assertSee($customer->name)
+            ->assertSee('Can you help me?');
+
+        Livewire::test(CustomerChats::class)
+            ->assertSee($customer->name)
+            ->assertSee('Can you help me?')
+            ->set('body', 'Of course, how can we help?')
+            ->call('sendMessage')
+            ->assertHasNoErrors()
+            ->assertSee('Of course, how can we help?');
+
+        $this->assertDatabaseHas('chat_messages', [
+            'customer_id' => $customer->id,
+            'body' => 'Of course, how can we help?',
+        ]);
     }
 
     public function test_guest_order_status_changes_do_not_create_customer_notifications(): void

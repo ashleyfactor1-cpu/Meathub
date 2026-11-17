@@ -29,6 +29,7 @@ Route::middleware('guest')->prefix('account')->name('account.')->group(function 
 
 Route::middleware('auth')->prefix('account')->name('account.')->group(function () {
     Route::post('/logout', [CustomerAccountController::class, 'logout'])->name('logout');
+    Route::get('/chat', [CustomerAccountController::class, 'chat'])->name('chat');
     Route::get('/orders', [CustomerAccountController::class, 'orders'])->name('orders');
     Route::get('/orders/{orderNumber}', [OrderController::class, 'showForCustomer'])->name('orders.show');
     Route::post('/notifications/read-all', [CustomerAccountController::class, 'markAllNotificationsAsRead'])
@@ -45,6 +46,7 @@ Route::get('/', function (Request $request) {
     if ($search !== '') {
         $productsQuery->where(function ($query) use ($search) {
             $query->where('name', 'like', "%{$search}%")
+                ->orWhere('category', 'like', "%{$search}%")
                 ->orWhereHas('producer', fn ($producerQuery) => $producerQuery->where('name', 'like', "%{$search}%"))
                 ->orWhere('description', 'like', "%{$search}%");
         });
@@ -63,7 +65,11 @@ Route::get('/', function (Request $request) {
     }
 
     return view('home', [
-        'products' => $productsQuery->with('producer')->paginate(12)->withQueryString(),
+        'products' => $productsQuery->with('producer')->paginate(12)->appends(array_filter([
+            'q' => $search ?: null,
+            'category' => $category ?: null,
+            'sort' => $sort !== 'featured' ? $sort : null,
+        ])),
         'categories' => ['Pork', 'Beef', 'Chicken', 'Organ Meat'],
         'search' => $search,
         'selectedCategory' => $category,

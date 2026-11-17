@@ -11,7 +11,6 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
             <a href="{{ route('home') }}" class="text-sm font-semibold text-[#14532d] hover:underline">← Back to MeatHub</a>
             <div class="flex items-center gap-3">
-                <a href="{{ route('account.orders') }}" class="text-sm font-semibold text-[#14532d] hover:underline">My orders</a>
                 <form action="{{ route('account.logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="text-sm font-semibold text-[#655c56] hover:text-[#14532d]">Sign out</button>

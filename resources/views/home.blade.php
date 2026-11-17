@@ -10,7 +10,7 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#f8f5ef] pb-24 text-[#292522] antialiased">
+<body class="min-h-screen bg-[#f8f5ef] text-[#292522] antialiased">
     <div class="bg-[#14532d] px-4 py-2 text-center text-xs font-medium tracking-wide text-white sm:text-sm">
         GOOD MEAT, FROM PEOPLE WHO CARE <span class="mx-2 text-[#e2bd91]">•</span> Meet your local producers
     </div>
@@ -28,18 +28,33 @@
             </div>
 
             <div class="flex shrink-0 items-center gap-2">
+                <a href="#market" class="inline-flex items-center gap-2 rounded-full bg-[#14532d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#166534] sm:px-5">
+                    Explore products
+                </a>
                 @auth
-                    @include('components.customer-notification-bell')
                     <a href="{{ route('account.orders') }}" class="rounded-full border border-[#d9e3d8] bg-white px-4 py-2.5 text-sm font-semibold text-[#14532d] transition hover:bg-[#f4f8f3]">My account</a>
                 @else
                     <a href="{{ route('account.login') }}" class="rounded-full border border-[#d9e3d8] bg-white px-4 py-2.5 text-sm font-semibold text-[#14532d] transition hover:bg-[#f4f8f3]">Sign in</a>
                 @endauth
-                <a href="#market" class="inline-flex items-center gap-2 rounded-full bg-[#14532d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#166534] sm:px-5">
-                    Explore products <span aria-hidden="true">↗</span>
-                </a>
+                <button id="cart-toggle" type="button" aria-label="Open shopping cart" aria-haspopup="dialog" aria-controls="cart-dialog" class="inline-flex h-11 w-16 shrink-0 items-center justify-center gap-1 rounded-full bg-[#14532d] text-xl text-white transition hover:bg-[#166534] focus:outline-none focus:ring-4 focus:ring-[#a16b46]/40">
+                    <span aria-hidden="true">🛒</span>
+                    <span id="cart-count" class="flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-[#14532d]" aria-label="0 items in cart" aria-live="polite">0</span>
+                </button>
+                @auth
+                    @include('components.customer-notification-bell')
+                @endauth
             </div>
         </nav>
     </header>
+
+    @auth
+        @if (! auth()->user()->is_admin)
+            <a href="{{ route('account.chat') }}" aria-label="Chat" class="fixed bottom-5 right-4 z-30 inline-flex items-center gap-2 rounded-full bg-[#14532d] px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-[#166534] focus:outline-none focus:ring-4 focus:ring-[#a16b46]/40">
+                <span aria-hidden="true">💬</span>
+                Chat
+            </a>
+        @endif
+    @endauth
 
     <main>
         <section class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:px-8 lg:py-20">
@@ -53,7 +68,7 @@
                 <p class="mt-5 max-w-xl text-base leading-7 text-[#716761] sm:text-lg sm:leading-8">
                     Shop thoughtfully raised meat from local producers. Find a favorite cut, learn who made it possible, and bring something good to the table.
                 </p>
-                <form action="{{ route('home') }}" method="GET" class="mt-8 flex max-w-xl items-center gap-2 rounded-2xl border border-[#e6ddd2] bg-white p-2 shadow-[0_12px_35px_-28px_rgba(74,38,35,.45)] focus-within:border-[#a75a53]">
+                <form action="{{ route('home') }}#market" method="GET" class="mt-8 flex max-w-xl items-center gap-2 rounded-2xl border border-[#e6ddd2] bg-white p-2 shadow-[0_12px_35px_-28px_rgba(74,38,35,.45)] focus-within:border-[#a75a53]">
                     <label class="sr-only" for="hero-search">Search products or producers</label>
                     <span class="pl-3 text-xl text-[#8b8178]" aria-hidden="true">⌕</span>
                     <input id="hero-search" type="search" name="q" value="{{ $search }}" placeholder="Try “pork belly” or a producer name" class="h-11 min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#a39a91] focus:ring-0">
@@ -112,10 +127,16 @@
                         <h2 class="mt-2 text-3xl font-semibold tracking-tight text-[#1f2937] sm:text-4xl">Shop by category</h2>
                         <p class="mt-2 text-sm text-[#82766e]">Good cuts, from producers close to home.</p>
                     </div>
-                    <span class="text-sm text-[#82766e]">{{ $products->total() }} {{ Str::plural('product', $products->total()) }} available</span>
+                    <span class="text-sm text-[#82766e]">
+                        @if ($search !== '')
+                            Showing {{ $products->total() }} {{ Str::plural('result', $products->total()) }} for “{{ $search }}”
+                        @else
+                            {{ $products->total() }} {{ Str::plural('product', $products->total()) }} available
+                        @endif
+                    </span>
                 </div>
 
-                <form action="{{ route('home') }}" method="GET" class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <form action="{{ route('home') }}#market" method="GET" class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <label class="relative block">
                         <span class="sr-only">Search products or producers</span>
                         <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-lg text-[#958a80]" aria-hidden="true">⌕</span>
@@ -134,9 +155,7 @@
                             <option value="price-asc" @selected($sort === 'price-asc')>Price: low to high</option>
                             <option value="price-desc" @selected($sort === 'price-desc')>Price: high to low</option>
                         </select>
-                        <button type="submit" class="h-12 rounded-xl bg-[#14532d] px-5 text-sm font-semibold text-white transition hover:bg-[#166534]">
-                            Search
-                    </button>
+                        <button type="submit" class="h-12 rounded-xl bg-[#14532d] px-5 text-sm font-semibold text-white transition hover:bg-[#166534]">Search</button>
                     </div>
                 </form>
 
@@ -185,7 +204,11 @@
                                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3ebe4] text-sm font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($product->producer?->name ?: 'P', 0, 1)) }}</span>
                                         <div class="min-w-0">
                                             <p class="text-[11px] uppercase tracking-widest text-[#978b80]">Produced by</p>
-                                            <p class="truncate text-sm font-medium text-[#514740]">{{ $product->producer?->name ?: 'Producer details coming soon' }}</p>
+                                            @if ($product->producer)
+                                                <a href="#producer-{{ $product->producer->id }}" class="truncate text-sm font-medium text-[#514740] hover:text-[#14532d] hover:underline">{{ $product->producer->name }}</a>
+                                            @else
+                                                <p class="truncate text-sm font-medium text-[#514740]">Producer details coming soon</p>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="mt-4 flex items-end justify-between gap-3">
@@ -220,7 +243,7 @@
                     <div class="mt-8 rounded-2xl border border-dashed border-[#e1d5ca] bg-[#fbf8f3] px-5 py-14 text-center">
                         <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e8e1] text-2xl text-[#15803d]" aria-hidden="true">⌕</span>
                         <h3 class="mt-4 text-lg font-semibold text-[#1f2937]">No products found</h3>
-                        <p class="mt-1 text-sm text-[#82766e]">Try a different search or browse all available products.</p>
+                        <p class="mt-1 text-sm text-[#82766e]">Try a different category or browse all available products.</p>
                         <a href="{{ route('home') }}#market" class="mt-5 inline-flex rounded-lg bg-[#14532d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#166534]">Clear filters</a>
                     </div>
                 @endif
@@ -235,23 +258,26 @@
                 @if ($producers->isNotEmpty())
                     <div class="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ($producers as $producer)
-                            <article class="flex gap-4 rounded-2xl border border-[#ece3d9] bg-white p-5">
-                                @if ($producer->avatar)
-                                    <img src="{{ asset('storage/'.$producer->avatar) }}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover">
-                                @else
-                                    <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#edf1e8] text-xl font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($producer->name, 0, 1)) }}</span>
-                                @endif
-                                <div class="min-w-0">
-                                    <h3 class="font-semibold text-[#1f2937]">{{ $producer->name }}</h3>
-                                    @if ($producer->location)
-                                        <p class="mt-1 text-sm text-[#4f7657]">{{ $producer->location }}</p>
-                                    @endif
-                                    @if ($producer->bio)
-                                        <p class="mt-2 text-sm leading-6 text-[#82766e]">{{ \Illuminate\Support\Str::limit($producer->bio, 140) }}</p>
-                                    @endif
-                                </div>
-                            </article>
-                        @endforeach
+                            <article id="producer-{{ $producer->id }}" class="rounded-2xl border border-[#ece3d9] bg-white p-5">
+                                <div class="flex gap-4">
+                                        @if ($producer->avatar)
+                                            <img src="{{ asset('storage/'.$producer->avatar) }}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover">
+                                        @else
+                                            <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#edf1e8] text-xl font-semibold text-[#14532d]" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($producer->name, 0, 1)) }}</span>
+                                        @endif
+                                        <div class="min-w-0">
+                                            <h3 class="font-semibold text-[#1f2937]">{{ $producer->name }}</h3>
+                                            @if ($producer->location)
+                                                <p class="mt-1 text-sm text-[#4f7657]">{{ $producer->location }}</p>
+                                            @endif
+                                            @if ($producer->bio)
+                                                <p class="mt-2 text-sm leading-6 text-[#82766e]">{{ \Illuminate\Support\Str::limit($producer->bio, 140) }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @include('components.producer-map', ['producer' => $producer])
+                                </article>
+                            @endforeach
                     </div>
                 @else
                     <p class="mt-6 rounded-xl border border-dashed border-[#e1d5ca] bg-white px-5 py-8 text-center text-sm text-[#82766e]">Producer profiles will appear here soon.</p>
@@ -286,7 +312,7 @@
         <div class="flex items-center justify-between border-b border-[#ece3d9] px-5 py-4 sm:px-6">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[.14em] text-[#4f7657]">GCash checkout</p>
-                <h2 class="mt-1 text-xl font-semibold text-[#1f2937]">Delivery address</h2>
+                <h2 class="mt-1 text-xl font-semibold text-[#1f2937]">Pickup reservation</h2>
             </div>
             <button type="button" data-close-checkout aria-label="Close checkout" class="flex h-10 w-10 items-center justify-center rounded-full text-xl text-[#655c56] transition hover:bg-[#f2e8e1] hover:text-[#14532d]">×</button>
         </div>
@@ -295,9 +321,6 @@
             <div id="checkout-items"></div>
             <div id="checkout-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert"></div>
             <p class="text-sm text-[#655c56]">Your order total is <strong id="checkout-total" class="text-[#14532d]">₱0.00</strong>. Stock is reserved while your payment is pending.</p>
-            <label class="block text-sm font-medium text-[#514740]" for="delivery-address">Delivery address
-                <textarea id="delivery-address" name="delivery_address" required maxlength="2000" rows="3" autocomplete="street-address" class="mt-1.5 w-full rounded-xl border border-[#e8dfd5] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/10">{{ old('delivery_address') }}</textarea>
-            </label>
             @if ($gcashQrImage)
                 <div class="flex items-center gap-4 rounded-2xl border border-[#dce8dd] bg-[#f4f8f3] p-4">
                     <img src="{{ asset($gcashQrImage) }}" alt="" class="h-20 w-20 rounded-lg bg-white object-contain p-1">
@@ -314,12 +337,6 @@
             <button type="button" data-back-to-cart class="w-full rounded-xl border border-[#e8dfd5] bg-white px-4 py-3 text-sm font-semibold text-[#514740] transition hover:bg-[#f5f2ed]">Back to cart</button>
         </form>
     </dialog>
-
-    <button id="cart-toggle" type="button" aria-haspopup="dialog" aria-controls="cart-dialog" class="fixed bottom-5 right-4 z-30 inline-flex min-h-14 items-center gap-3 rounded-full bg-[#14532d] px-5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(20,83,45,.75)] transition hover:-translate-y-0.5 hover:bg-[#166534] focus:outline-none focus:ring-4 focus:ring-[#a16b46]/40 sm:bottom-7 sm:right-7">
-        <span class="text-lg" aria-hidden="true">🛒</span>
-        <span>Cart</span>
-        <span id="cart-count" class="flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-[#14532d]" aria-label="0 items in cart">0</span>
-    </button>
 
     <footer class="bg-[#1f2937] text-white">
         <div class="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
@@ -341,7 +358,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <dt class="text-xs font-medium uppercase tracking-wide text-white/45">Location</dt>
-                            <dd class="mt-1">Alcate Victoria</dd>
+                            <dd class="mt-1">Victoria, Oriental Mindoro</dd>
                         </div>
                     </dl>
                 </section>

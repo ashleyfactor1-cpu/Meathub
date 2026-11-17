@@ -80,6 +80,13 @@ class CustomerAccountController extends Controller
         ]);
     }
 
+    public function chat(Request $request): View
+    {
+        abort_if($request->user()->is_admin, 403);
+
+        return view('account.chat');
+    }
+
     public function markAllNotificationsAsRead(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
