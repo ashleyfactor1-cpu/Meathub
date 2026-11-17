@@ -8,8 +8,11 @@ use App\Models\Order;
 use App\Models\Producer;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
@@ -18,6 +21,21 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_expired_csrf_token_during_logout_clears_the_session_and_redirects_home(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $request = Request::create('/account/logout', 'POST');
+        $request->setLaravelSession($this->app['session']->driver());
+        $request->session()->put('logout-test', 'present');
+
+        $response = app(ExceptionHandler::class)->render($request, new TokenMismatchException);
+
+        $this->assertSame(route('home'), $response->headers->get('Location'));
+        $this->assertFalse($request->session()->has('logout-test'));
+        $this->assertGuest();
+    }
 
     /**
      * A basic test example.
@@ -364,6 +382,8 @@ class ExampleTest extends TestCase
             ->assertDontSee('Notifications')
             ->assertSee('← Back to MeatHub')
             ->assertSee('Sign out')
+            ->assertSee('action="'.route('account.logout').'" method="POST"', false)
+            ->assertSee('name="_token"', false)
             ->assertSee('My orders')
             ->assertSee('Paid');
 
